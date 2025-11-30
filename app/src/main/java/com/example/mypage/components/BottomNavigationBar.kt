@@ -29,6 +29,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mypage.Data.NavigationItem
 import com.example.mypage.navigation.MainScreen
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
@@ -43,7 +47,13 @@ fun BottomNavigationBar(navController: NavController) {
 
     Box(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            // add bottom padding equal to system nav bar
+            .padding(
+                WindowInsets.navigationBars
+                    .only(WindowInsetsSides.Bottom)
+                    .asPaddingValues()
+            ),
         contentAlignment = Alignment.BottomCenter
     ) {
         Row(
@@ -112,3 +122,4 @@ private fun Modifier.clickableWithoutRipple(onClick: () -> Unit): Modifier {
         onClick()
     }
 }
+
