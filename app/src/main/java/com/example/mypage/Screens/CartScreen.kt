@@ -27,7 +27,7 @@ import com.example.mypage.Data.Book
 import com.example.mypage.Data.CartManager
 import com.example.mypage.navigation.Screen
 import com.example.mypage.ui.theme.SpaceGrotesk
-// CartScreen.kt
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(navController: NavController) {
@@ -59,54 +59,6 @@ fun CartScreen(navController: NavController) {
                 )
             }
         },
-        bottomBar = {
-            if (cartItems.isNotEmpty()) {
-                Surface(
-                    shadowElevation = 12.dp,
-                    color = Color.White
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "Total",
-                                fontFamily = SpaceGrotesk,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                text = "${"%.2f".format(total)} $",
-                                fontFamily = SpaceGrotesk,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = Color(0xFF0D9488)
-                            )
-                        }
-                        Button(
-                            onClick = { showDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFB8860B)
-                            ),
-                            shape = RoundedCornerShape(999.dp),
-                            modifier = Modifier
-                                .height(52.dp)
-                        ) {
-                            Text(
-                                text = "Checkout",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
     ) { paddingValues ->
 
         if (cartItems.isEmpty()) {
@@ -143,43 +95,97 @@ fun CartScreen(navController: NavController) {
                 }
             }
         } else {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.White)
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 20.dp,
-                    bottom = 80.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(paddingValues)
             ) {
-                item {
-                    Text(
-                        text = "Unlock Your Next\nObsession!",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = SpaceGrotesk,
-                        lineHeight = 28.sp
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 20.dp,
+                        bottom = 20.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "Unlock Your Next\nObsession!",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = SpaceGrotesk,
+                            lineHeight = 28.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    items(cartItems) { book ->
+                        CartBookRow(
+                            book = book,
+                            onClick = {
+                                navController.navigate(
+                                    Screen.ProductDetail.passBookId(book.id)
+                                )
+                            },
+                            onRemove = {
+                                CartManager.removeFromCart(book.id)
+                                refreshTrigger++
+                            }
+                        )
+                    }
                 }
 
-                items(cartItems) { book ->
-                    CartBookRow(
-                        book = book,
-                        onClick = {
-                            navController.navigate(
-                                Screen.ProductDetail.passBookId(book.id)
-                            )
-                        },
-                        onRemove = {
-                            CartManager.removeFromCart(book.id)
-                            refreshTrigger++
-                        }
-                    )
+                // Bottom area with total and a normal button
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Total",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = SpaceGrotesk
+                        )
+                        Text(
+                            text = "${"%.2f".format(total)} $",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = SpaceGrotesk,
+                            color = Color(0xFF0D9488)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { showDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFB8860B)
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text(
+                            text = "Checkout",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
         }
@@ -249,7 +255,11 @@ fun CartScreen(navController: NavController) {
 }
 
 @Composable
-fun CartBookRow(book: Book, onClick: () -> Unit, onRemove: () -> Unit) {
+fun CartBookRow(
+    book: Book,
+    onClick: () -> Unit,
+    onRemove: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -299,3 +309,4 @@ fun CartBookRow(book: Book, onClick: () -> Unit, onRemove: () -> Unit) {
         }
     }
 }
+
