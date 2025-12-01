@@ -1,7 +1,5 @@
 package com.example.mypage.Data
 
-import com.example.mypage.Data.Book
-
 object CartManager {
     private val _cartItems = mutableListOf<Book>()
     val cartItems: List<Book> get() = _cartItems.toList()
