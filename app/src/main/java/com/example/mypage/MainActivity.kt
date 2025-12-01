@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.mypage.Screens.CartScreen
 import com.example.mypage.Screens.ProfileScreen
-import com.example.mypage.Screens.SettingsScreen
+
 import com.example.mypage.ui.theme.MYPAGETheme
 import com.example.mypage.navigation.MainScreen
 import com.example.mypage.navigation.NavigationStack
@@ -24,7 +24,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mypage.Data.Book
-import com.example.mypage.HomePageScreen.HomePageScreen
+import com.example.mypage.Screens.HomePageScreen
+import com.example.mypage.Screens.SettingsScreen
 
 import com.example.mypage.components.BottomNavigationBar
 
