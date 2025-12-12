@@ -1,0 +1,59 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Build files
+*.class
+bin/
+build/
+.gradle/
+*.log
+
+# OS files
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# Shortcuts
+*.lnk
+
+# Temporary files
+~$*
+*.tmp
+
+# Kotlin/Android specific
+.kotlin/
+local.properties
+
+# Node modules
+node_modules/
+
+# Personal files
+account_github.txt
+
+# Other unnecessary folders
+3D Objects*
+Bureau*
+Excel*
+GitHub Desktop.lnk
+Personnel*
+PowerPoint*
+WhatsApp.lnk
+Word*
+Kotlin_projects/
