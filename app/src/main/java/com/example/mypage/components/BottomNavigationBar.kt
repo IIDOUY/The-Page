@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -48,7 +47,6 @@ fun BottomNavigationBar(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            // add bottom padding equal to system nav bar
             .padding(
                 WindowInsets.navigationBars
                     .only(WindowInsetsSides.Bottom)
@@ -82,11 +80,10 @@ fun BottomNavigationBar(navController: NavController) {
                                 restoreState = true
                             }
                         }
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                        .padding(horizontal = 6.dp, vertical = 8.dp), // padding réduit
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -102,8 +99,7 @@ fun BottomNavigationBar(navController: NavController) {
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                maxLines = 1 // pas d'ellipsis, donc "Home" apparaît entier
                             )
                         }
                     }
@@ -122,4 +118,3 @@ private fun Modifier.clickableWithoutRipple(onClick: () -> Unit): Modifier {
         onClick()
     }
 }
-

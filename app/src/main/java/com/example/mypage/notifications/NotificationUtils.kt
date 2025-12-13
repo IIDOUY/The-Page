@@ -36,7 +36,7 @@ fun showNewBooksNotification(
     val text = "De nouveaux livres de $category ont été ajoutés."
 
     val builder = NotificationCompat.Builder(context, BOOKS_CHANNEL_ID)
-        .setSmallIcon(R.drawable.check)
+        .setSmallIcon(R.drawable.cover4)
         .setContentTitle(title)
         .setContentText(text)
         .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -46,7 +46,7 @@ fun showNewBooksNotification(
 
     val notificationManager = NotificationManagerCompat.from(context)
 
-    // ✅ Vérification de la permission avant d'envoyer la notif
+    //  Vérification de la permission avant d'envoyer la notif
     if (ActivityCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS
