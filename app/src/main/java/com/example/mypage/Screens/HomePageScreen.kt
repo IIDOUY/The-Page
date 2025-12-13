@@ -1,6 +1,8 @@
 package com.example.mypage.Screens
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.platform.LocalContext
+import com.example.mypage.notifications.showNewBooksNotification
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -24,26 +26,28 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.mypage.Data.*
-import com.example.mypage.navigation.Screen
-import com.example.mypage.R
-import com.example.mypage.ui.theme.SpaceGrotesk
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.mypage.R
 import com.example.mypage.models.Book
 import com.example.mypage.models.getAuthorName
 import com.example.mypage.models.getCoverUrl
 import com.example.mypage.models.getPrice
 import com.example.mypage.models.getRating
+import com.example.mypage.navigation.Screen
+import com.example.mypage.ui.theme.SpaceGrotesk
+import com.example.mypage.viewmodel.FavoritesViewModel
 
-// Category options for filtering
+
+
 val BOOK_CATEGORIES = listOf(
     "All Books",
     "Science Fiction",
@@ -62,17 +66,19 @@ val BOOK_CATEGORIES = listOf(
 fun HomePageScreen(
     parentNavController: NavHostController,
     allBooks: List<Book>,
-    navController: NavHostController
+    navController: NavHostController,
+    favoritesViewModel: FavoritesViewModel
 ) {
+    val favoriteIds by favoritesViewModel.favoriteIds.collectAsState()
+    val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("All Books") }
     var showCategoryMenu by remember { mutableStateOf(false) }
 
-    // Filter books based on search and category
+    // Filtrage mémorisé
     val filteredBooks = remember(searchText, selectedCategory, allBooks) {
         var filtered = allBooks
 
-        // Filter by category (topic)
         if (selectedCategory != "All Books") {
             filtered = filtered.filter { book ->
                 book.subjects.any { subject ->
@@ -81,7 +87,6 @@ fun HomePageScreen(
             }
         }
 
-        // Filter by search text
         if (searchText.isNotBlank()) {
             filtered = filtered.filter { book ->
                 book.title.contains(searchText, ignoreCase = true) ||
@@ -91,6 +96,11 @@ fun HomePageScreen(
         }
 
         filtered
+    }
+
+    // Limiter le nombre de livres affichés sur la Home (le reste dans AllProducts)
+    val limitedBooks = remember(filteredBooks) {
+        filteredBooks.take(40)
     }
 
     Scaffold(
@@ -122,9 +132,13 @@ fun HomePageScreen(
             // Featured Banner - from first API book
             if (allBooks.isNotEmpty()) {
                 item {
-                    ApiFeaturedBanner(book = allBooks.first())
+                    ApiFeaturedBanner(
+                        book = allBooks.first(),
+                        parentNavController = parentNavController
+                    )
                 }
             }
+
 
             // Search Bar with Filter Button
             item {
@@ -171,7 +185,7 @@ fun HomePageScreen(
             }
 
             // Show filtered books or empty message
-            if (filteredBooks.isEmpty()) {
+            if (limitedBooks.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -189,8 +203,8 @@ fun HomePageScreen(
                     }
                 }
             } else {
-                // API Books Grid - 2 items per row - NOW USES filteredBooks!
-                items(filteredBooks.chunked(2)) { rowBooks ->
+                // API Books Grid - 2 items per row
+                items(limitedBooks.chunked(2)) { rowBooks ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -203,6 +217,8 @@ fun HomePageScreen(
                             ) {
                                 ApiDiscoverBookCard(
                                     book = book,
+                                    isFavorite = favoriteIds.contains(book.id),
+                                    onFavoriteClick = { favoritesViewModel.onFavoriteClick(book.id) },
                                     coverModifier = Modifier
                                         .height(200.dp)
                                         .fillMaxWidth(),
@@ -252,7 +268,6 @@ fun SearchBarWithFilter(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Search TextField
             OutlinedTextField(
                 value = searchText,
                 onValueChange = onSearchChange,
@@ -288,7 +303,6 @@ fun SearchBarWithFilter(
                 textStyle = LocalTextStyle.current.copy()
             )
 
-            // Filter Button
             Box {
                 IconButton(
                     onClick = { onShowCategoryMenuChange(!showCategoryMenu) },
@@ -304,7 +318,6 @@ fun SearchBarWithFilter(
                     )
                 }
 
-                // Dropdown Menu
                 DropdownMenu(
                     expanded = showCategoryMenu,
                     onDismissRequest = { onShowCategoryMenuChange(false) },
@@ -332,7 +345,6 @@ fun SearchBarWithFilter(
             }
         }
 
-        // Show active filter badge
         if (selectedCategory != "All Books") {
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -363,7 +375,10 @@ fun SearchBarWithFilter(
 
 // API-based Featured Banner
 @Composable
-fun ApiFeaturedBanner(book: Book) {
+fun ApiFeaturedBanner(
+    book: Book,
+    parentNavController: NavHostController
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -430,13 +445,15 @@ fun ApiFeaturedBanner(book: Book) {
 
             Column {
                 Text(
-                    book.title.take(25),
+                    text = book.title,
                     color = Color.White,
                     fontFamily = SpaceGrotesk,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    softWrap = true,
+                    modifier = Modifier.fillMaxWidth(0.6f)
                 )
                 Text(
                     "by ${book.getAuthorName()}",
@@ -462,7 +479,11 @@ fun ApiFeaturedBanner(book: Book) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
-                        onClick = { },
+                        onClick = {
+                            parentNavController.navigate(
+                                Screen.ProductDetail.passBookId(book.id)
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.White
                         ),
@@ -482,15 +503,20 @@ fun ApiFeaturedBanner(book: Book) {
     }
 }
 
+
 // API-based Book Card
 @Composable
 fun ApiDiscoverBookCard(
     book: Book,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
     coverModifier: Modifier = Modifier,
     titleFontSize: TextUnit = 14.sp,
     authorFontSize: TextUnit = 12.sp,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(14.dp))
@@ -498,20 +524,22 @@ fun ApiDiscoverBookCard(
             .padding(8.dp)
             .clickable { onClick() }
     ) {
-        // API Book Cover Image
         AsyncImage(
-            model = book.getCoverUrl(),
+            model = ImageRequest.Builder(context)
+                .data(book.getCoverUrl())
+                .crossfade(true)
+                .build(),
             contentDescription = book.title,
             modifier = Modifier
                 .height(160.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.cover1)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Genre/Subject
         if (book.subjects.isNotEmpty()) {
             Text(
                 text = book.subjects.first().take(15),
@@ -523,7 +551,6 @@ fun ApiDiscoverBookCard(
             )
         }
 
-        // Title
         Text(
             text = book.title,
             color = Color.Black,
@@ -534,7 +561,6 @@ fun ApiDiscoverBookCard(
             softWrap = true,
         )
 
-        // Author
         Text(
             text = "by ${book.getAuthorName()}",
             color = Color.Gray,
@@ -546,7 +572,6 @@ fun ApiDiscoverBookCard(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Rating
         Text(
             text = "⭐ ${book.getRating()}",
             color = Color(0xFFFFD700),
@@ -556,7 +581,6 @@ fun ApiDiscoverBookCard(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Price and Add Button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -569,23 +593,30 @@ fun ApiDiscoverBookCard(
                 fontSize = 13.sp,
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = { /* Add to cart */ },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB8860B)),
-                shape = RoundedCornerShape(20.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            IconButton(
+                onClick = {
+                    // 1) toggle favori (MVVM)
+                    onFavoriteClick()
+                    // 2) afficher la notification
+                    showNewBooksNotification(
+                        context = context,
+                        category = book.subjects.firstOrNull() ?: "Books",
+                        count = 1
+                    )
+                },
                 modifier = Modifier.height(32.dp)
             ) {
-                Text(
-                    text = "Add",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = if (isFavorite) Color.Red else Color.Gray
                 )
             }
+
         }
     }
 }
+
 
 data class Seller(
     val name: String,

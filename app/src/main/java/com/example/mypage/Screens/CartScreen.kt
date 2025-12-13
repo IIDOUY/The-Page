@@ -23,24 +23,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
-import com.example.mypage.Data.CartManager
-
 import com.example.mypage.navigation.Screen
 import com.example.mypage.ui.theme.SpaceGrotesk
 import coil.compose.AsyncImage
+
 import com.example.mypage.models.Book
 import com.example.mypage.models.getCoverUrl
 import com.example.mypage.models.getPrice
+import com.example.mypage.viewmodel.CartViewModel
+import com.example.mypage.viewmodel.PurchasedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreen(navController: NavController) {
-
+fun CartScreen(
+    navController: NavController,
+    cartViewModel: CartViewModel,
+    purchasedViewModel: PurchasedViewModel,
+    allBooks: List<Book>
+) {
     var showDialog by remember { mutableStateOf(false) }
-    var refreshTrigger by remember { mutableStateOf(0) }
 
-    val cartItems = remember(refreshTrigger) { CartManager.cartItems }
-    val total = cartItems.sumOf { it.getPrice() }
+    val cartItems by cartViewModel.cartItems.collectAsState()
+
+    // Join CartItemEntity (bookId, quantity) avec Book
+    val cartBooks = cartItems.mapNotNull { item ->
+        val book = allBooks.firstOrNull { it.id == item.bookId }
+        book?.let { Pair(it, item.quantity) }
+    }
+
+    // Total basé sur la quantité et le prix
+    val total = cartBooks.sumOf { (book, qty) ->
+        book.getPrice() * qty
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -65,7 +79,7 @@ fun CartScreen(navController: NavController) {
         },
     ) { paddingValues ->
 
-        if (cartItems.isEmpty()) {
+        if (cartBooks.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -77,10 +91,7 @@ fun CartScreen(navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "🛒",
-                        fontSize = 64.sp
-                    )
+                    Text("🛒", fontSize = 64.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Your Cart Is Empty",
@@ -128,17 +139,17 @@ fun CartScreen(navController: NavController) {
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    items(cartItems) { book ->
+                    items(cartBooks) { (book, quantity) ->
                         CartBookRow(
                             book = book,
+                            quantity = quantity,
                             onClick = {
                                 navController.navigate(
                                     Screen.ProductDetail.passBookId(book.id)
                                 )
                             },
                             onRemove = {
-                                CartManager.removeFromCart(book.id)
-                                refreshTrigger++
+                                cartViewModel.removeFromCart(book.id)   // ✅ Room + VM
                             }
                         )
                     }
@@ -197,15 +208,7 @@ fun CartScreen(navController: NavController) {
 
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showDialog = false
-                // Add all cart items to purchased books
-                CartManager.cartItems.forEach { book ->
-                    CartManager.addToPurchased(book)
-                }
-                CartManager.clearCart()
-                refreshTrigger++
-            },
+            onDismissRequest = { showDialog = false },
             shape = RoundedCornerShape(20.dp),
             containerColor = Color.White,
             icon = {
@@ -239,12 +242,13 @@ fun CartScreen(navController: NavController) {
                 Button(
                     onClick = {
                         showDialog = false
-                        // Add all cart items to purchased books
-                        CartManager.cartItems.forEach { book ->
-                            CartManager.addToPurchased(book)
+
+                        val currentItems = cartItems
+
+                        currentItems.forEach { item ->
+                            purchasedViewModel.addPurchased(item.bookId)
                         }
-                        CartManager.clearCart()
-                        refreshTrigger++
+                        cartViewModel.clearCart()       //  vider la table cart_items
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFB8860B)
@@ -265,10 +269,10 @@ fun CartScreen(navController: NavController) {
         )
     }
 }
-
 @Composable
 fun CartBookRow(
     book: Book,
+    quantity: Int,
     onClick: () -> Unit,
     onRemove: () -> Unit
 ) {
@@ -281,7 +285,6 @@ fun CartBookRow(
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // API Book Cover with AsyncImage
         AsyncImage(
             model = book.getCoverUrl(),
             contentDescription = book.title,
@@ -305,7 +308,7 @@ fun CartBookRow(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${"%.2f".format(book.getPrice())} $",
+                text = "${"%.2f".format(book.getPrice())} $  x $quantity",
                 fontFamily = SpaceGrotesk,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,

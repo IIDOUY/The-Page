@@ -1,41 +1,70 @@
 package com.example.mypage.Screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Palette
+
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+
 import androidx.navigation.NavController
-import com.example.mypage.Data.CartManager
-import com.example.mypage.models.Book
-import com.example.mypage.models.getCoverUrl
+import coil.compose.AsyncImage
 import com.example.mypage.navigation.Screen
 import com.example.mypage.ui.theme.SpaceGrotesk
-import coil.compose.AsyncImage
+import com.example.mypage.viewmodel.FavoritesViewModel
+import com.example.mypage.viewmodel.PurchasedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController) {
-    // Get purchased books from CartManager (in real app, use database)
-    val purchasedBooks = remember { CartManager.purchasedBooks }
+fun ProfileScreen(
+    navController: NavController,
+    favoritesViewModel: FavoritesViewModel,
+    purchasedViewModel: PurchasedViewModel
+) {
+    val favoriteIds by favoritesViewModel.favoriteIds.collectAsState()
+    val purchasedEntities by purchasedViewModel.purchasedBooks.collectAsState()
+
+    val context = LocalContext.current
+    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            profileImageUri = uri
+        }
+    }
 
     Scaffold(
         containerColor = Color.White,
@@ -79,6 +108,7 @@ fun ProfileScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
+            // Header profil
             item {
                 Box(
                     modifier = Modifier
@@ -110,15 +140,29 @@ fun ProfileScreen(navController: NavController) {
                                             Color(0xFFDAA520)
                                         )
                                     )
-                                ),
+                                )
+                                .clickable {
+                                    imagePicker.launch("image/*")
+                                },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Filled.Person,
-                                contentDescription = "Profile",
-                                tint = Color.White,
-                                modifier = Modifier.size(50.dp)
-                            )
+                            if (profileImageUri != null) {
+                                AsyncImage(
+                                    model = profileImageUri,
+                                    contentDescription = "Profile picture",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Profile",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -141,7 +185,7 @@ fun ProfileScreen(navController: NavController) {
                 }
             }
 
-
+            // Statistiques
             item {
                 Row(
                     modifier = Modifier
@@ -150,14 +194,20 @@ fun ProfileScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatCard(
-                        value = purchasedBooks.size.toString(),
+                        value = purchasedEntities.size.toString(),
                         label = "Books Read",
-                        icon = Icons.Filled.MenuBook
+                        icon = Icons.Filled.MenuBook,
+                        onClick = {
+                            navController.navigate(Screen.Purchased.route)
+                        }
                     )
                     StatCard(
-                        value = "8",
+                        value = favoriteIds.size.toString(),
                         label = "Wishlist",
-                        icon = Icons.Filled.Favorite
+                        icon = Icons.Filled.Favorite,
+                        onClick = {
+                            navController.navigate(Screen.Favorites.route)
+                        }
                     )
                     StatCard(
                         value = "156",
@@ -167,41 +217,7 @@ fun ProfileScreen(navController: NavController) {
                 }
             }
 
-            // My Books Section
-            if (purchasedBooks.isNotEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 16.dp)
-                    ) {
-                        Text(
-                            text = "My Books",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = SpaceGrotesk,
-                            color = Color.Black,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                    }
-                }
-
-                items(purchasedBooks) { book ->
-                    MyBookCard(
-                        book = book,
-                        onRead = {
-                            navController.navigate(
-                                Screen.BookReader.passBookId(book.id)
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-
+            // Paramètres / Préférences
             item {
                 Column(
                     modifier = Modifier
@@ -217,12 +233,7 @@ fun ProfileScreen(navController: NavController) {
                         modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp)
                     )
 
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.Person,
-                        title = "Personal Information",
-                        subtitle = "Update your details",
-                        onClick = { }
-                    )
+
 
                     ProfileMenuItem(
                         icon = Icons.Outlined.CreditCard,
@@ -279,7 +290,6 @@ fun ProfileScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-
                     Button(
                         onClick = { /* Logout */ },
                         colors = ButtonDefaults.buttonColors(
@@ -317,85 +327,15 @@ fun ProfileScreen(navController: NavController) {
 }
 
 @Composable
-fun MyBookCard(
-    book: Book,
-    onRead: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Book Cover
-            AsyncImage(
-                model = book.getCoverUrl(),
-                contentDescription = book.title,
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-            ) {
-                Text(
-                    text = book.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = SpaceGrotesk,
-                    color = Color.Black,
-                    maxLines = 2
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onRead,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0D9488)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text(
-                        "Read Now",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-
-            Icon(
-                Icons.Filled.ChevronRight,
-                contentDescription = "Open",
-                tint = Color.Gray,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-@Composable
 fun StatCard(
     value: String,
     label: String,
-    icon: ImageVector
+    icon: ImageVector,
+    onClick: () -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
+        onClick = onClick,
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF5F5F5)
         ),

@@ -18,10 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedButton
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mypage.viewmodel.AuthViewModel
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +45,24 @@ fun welcome_page(
     viewModel: AuthViewModel = viewModel()
 ) {
 
+    val images = listOf(
+        R.drawable.cover1,
+        R.drawable.cover2,
+        R.drawable.cover3,
+        R.drawable.cover4,
+        R.drawable.cover5,
+        R.drawable.cover6,
+        R.drawable.cover7,
+        R.drawable.cover8,
+        R.drawable.cover9,
+        R.drawable.cover1,
+        R.drawable.cover2,
+        R.drawable.cover3,
+        R.drawable.cover4,
+        R.drawable.cover5,
+        R.drawable.cover6
+    )
+
     val isUserLoggedIn = viewModel.isUserLoggedIn()
     Scaffold(
         containerColor = Color(0xFFF5F5F0)
@@ -65,8 +81,10 @@ fun welcome_page(
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                items(15) { index ->
-                    GridItem(number = index)
+                // CORRECTION 2: Utilise la taille réelle de la liste pour déterminer le nombre d'éléments.
+                items(images.size) { index ->
+                    // CORRECTION 3: Passe l'ID de l'image directement.
+                    GridItem(imageId = images[index])
                 }
             }
 
@@ -211,29 +229,12 @@ fun welcome_page(
     }
 }
 
+// CORRECTION 4: La fonction GridItem est maintenant plus simple et plus sûre.
 @Composable
-fun GridItem(number: Int) {
-    val images = listOf(
-        R.drawable.cover1,
-        R.drawable.cover2,
-        R.drawable.cover3,
-        R.drawable.cover4,
-        R.drawable.cover5,
-        R.drawable.cover6,
-        R.drawable.cover7,
-        R.drawable.cover8,
-        R.drawable.cover9,
-        R.drawable.cover1,
-        R.drawable.cover2,
-        R.drawable.cover3,
-        R.drawable.cover4,
-        R.drawable.cover5,
-        R.drawable.cover6
-    )
-
+fun GridItem(imageId: Int) {
     Image(
-        painter = painterResource(id = images[number]),
-        contentDescription = "Book cover ${number + 1}",
+        painter = painterResource(id = imageId),
+        contentDescription = "Book cover",
         modifier = Modifier
             .aspectRatio(0.7f)
             .clip(RoundedCornerShape(8.dp)),

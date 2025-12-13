@@ -1,6 +1,8 @@
 package com.example.mypage.navigation
 
 sealed class Screen(val route: String) {
+    object Favorites : Screen("favorites_screen")
+    object Purchased : Screen("purchased_screen")
     object AllProducts : Screen("all_products")
     object Cart: Screen("Cart")
     object Create : Screen("Create")

@@ -26,25 +26,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
-import com.example.mypage.Data.CartManager
+
 import com.example.mypage.navigation.Screen
 import com.example.mypage.ui.theme.SpaceGrotesk
 import coil.compose.AsyncImage
 import com.example.mypage.models.Book
 import com.example.mypage.models.getAuthorName
 import com.example.mypage.models.getCoverUrl
-import com.example.mypage.models.getDescription
 import com.example.mypage.models.getLikes
 import com.example.mypage.models.getPrice
 import com.example.mypage.models.getRating
 import com.example.mypage.models.getSummary
+import com.example.mypage.viewmodel.CartViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     navController: NavController,
     book: Book,
-    recommendations: List<Book>
+    recommendations: List<Book>,
+    cartViewModel: CartViewModel
 ) {
     val context = LocalContext.current
     var isExpanded by remember { mutableStateOf(false) }
@@ -131,7 +132,7 @@ fun ProductDetailScreen(
                 ) {
                     Button(
                         onClick = {
-                            CartManager.addToCart(book)
+                            cartViewModel.addToCart(book.id)
                             Toast.makeText(
                                 context,
                                 "✓ ${book.title} added to cart",
